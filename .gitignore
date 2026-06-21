@@ -8,3 +8,4 @@ Thumbs.db
 
 # Ignore local configuration environment files (good habit!)
 .env
+upload.py
