@@ -1,57 +1,48 @@
 import os
-import shutil
-from datetime import datetime
 from pathlib import Path
 
-# Define the directory you want to clean up
-TARGET_DIR = Path.home() / "Downloads"  # Adjust this path as needed
+# Define the folder you want to clean up (Defaults to the current directory)
+TARGET_DIR = Path(".")
 
-# Define your file categories mappings
-FILE_CATEGORIES = {
+# Define your file categories and their respective extensions
+TRACKED_EXTENSIONS = {
     "Documents": [".pdf", ".docx", ".doc", ".txt", ".xlsx", ".pptx"],
-    "Images": [".jpg", ".jpeg", ".png", ".gif", ".svg"],
-    "Archives": [".zip", ".tar", ".gz", ".rar"],
-    "Scripts_and_Code": [".py", ".js", ".html", ".css", ".json"],
+    "Images": [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"],
+    "Videos": [".mp4", ".mkv", ".avi", ".mov"],
+    "Archives": [".zip", ".rar", ".7z", ".tar", ".gz"],
+    "Scripts_and_Code": [".py", ".js", ".html", ".css", ".json", ".sh"]
 }
 
+def organize_folder():
+    print(f"Scanning directory: {TARGET_DIR.resolve()}\n")
+    
+    # Track files moved to show a summary at the end
+    moved_count = 0
 
-def organize_folder(target_path):
-    target_path = Path(target_path)
-
-    if not target_path.exists():
-        print(f"Error: The directory {target_path} does not exist.")
-        return
-
-    print(f"[{datetime.now()}] Starting maintenance on: {target_path}")
-
-    # Iterate through all items in the target directory
-    for item in target_path.iterdir():
-        # Skip directories to avoid messing up existing folders
-        if item.is_dir():
+    # Loop through every item in the target directory
+    for item in TARGET_DIR.iterdir():
+        # Skip directories, the script itself, and git folders
+        if item.is_dir() or item.name in ["maintenance.py", "upload.py", ".gitignore"]:
             continue
-
+            
         file_extension = item.suffix.lower()
-        moved = False
-
-        # Find the matching category for the file extension
-        for category, extensions in FILE_CATEGORIES.items():
+        
+        # Check which category the file matches
+        for folder_name, extensions in TRACKED_EXTENSIONS.items():
             if file_extension in extensions:
-                dest_dir = target_path / category
-                dest_dir.mkdir(exist_ok=True)  # Create the category folder if it doesn't exist
+                # Create the destination folder if it doesn't exist yet
+                destination_folder = TARGET_DIR / folder_name
+                destination_folder.mkdir(exist_ok=True)
+                
+                # Move the file securely
+                new_path = destination_folder / item.name
+                item.rename(new_path)
+                
+                print(f"Moved: {item.name} -> {folder_name}/")
+                moved_count += 1
+                break # Stop checking other categories once matched
 
-                print(f"Moving: {item.name} -> {category}/")
-                shutil.move(str(item), str(dest_dir / item.name))
-                moved = True
-                break
-
-        # Optional: Move unknown file types to an "Others" folder
-        if not moved and file_extension != "":
-            other_dir = target_path / "Others"
-            other_dir.mkdir(exist_ok=True)
-            shutil.move(str(item), str(other_dir / item.name))
-
-    print(f"[{datetime.now()}] Maintenance complete workflow cleanly executed.")
-
+    print(f"\n✨ Cleanup finished! Total files organized: {moved_count}")
 
 if __name__ == "__main__":
-    organize_folder(TARGET_DIR)
+    organize_folder()
